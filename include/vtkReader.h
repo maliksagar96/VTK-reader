@@ -34,7 +34,7 @@ class VTKReader {
   vtkSmartPointer<vtkUnstructuredGridReader> reader;
   int num_points;
 
-  std::vector<double> points, connectivity, normal, area; 
+  std::vector<double> points, connectivity, normal, area, cellType; 
   vtkUnstructuredGrid* grid;
 
 

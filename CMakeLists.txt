@@ -17,3 +17,5 @@ set(Sources
 
 add_executable(${target_name} ${Sources})
 target_link_libraries(${target_name} PRIVATE ${VTK_LIBRARIES})
+target_compile_definitions(${target_name} PRIVATE DEBUG)
+

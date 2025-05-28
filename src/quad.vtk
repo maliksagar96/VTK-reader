@@ -6,7 +6,7 @@ POINTS 6 float
 0 0 0 1 0 0 1 1 0 
 0 1 0 2 0 0 2 1 0 
 
-CELLS 2 10
+CELLS 3 15
 4 0 1 2 3 
 4 1 4 5 2 
 
@@ -14,9 +14,4 @@ CELL_TYPES 2
 9
 9
 
-CELL_DATA 2
-FIELD FieldData 2
-MyScalar 1 2 double
-1 2 
-EField 3 2 double
-1 0 0 2 0 0 
+

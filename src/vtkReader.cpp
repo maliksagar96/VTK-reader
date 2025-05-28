@@ -6,18 +6,25 @@
 #include <vtkPoints.h>
 #include <vtkSmartPointer.h>
 #include <vtkCellArray.h>
+#include <iostream>
 
 void VTKReader::init(std::string filename) {
-  this->filename = filename;
-  vtkSmartPointer<vtkUnstructuredGridReader> reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
-  reader->SetFileName(filename.c_str());
+  this->filename = filename;  
+  std::cout<<"Filename read.\n";
+  reader = vtkSmartPointer<vtkUnstructuredGridReader>::New();
+  reader->SetFileName(filename.c_str());  
+  std::cout<<"Filename set.\n";
   reader->Update();
   grid = reader->GetOutput();
 }
 
+VTKReader::~VTKReader() = default ;
+
 void VTKReader::read_points() {
-  
+  std::cout<<"reading points.\n";
+
   vtkPoints* vtk_pts = grid->GetPoints();
+  
   if (!vtk_pts) return;
 
   num_points = vtk_pts->GetNumberOfPoints();
@@ -32,9 +39,9 @@ void VTKReader::read_points() {
     points.push_back(p[2]);
   }
 
-  for(int i = 0;i<points.size();i++) {
-    std::cout<<"Points = "<<points[i]<<"\n";
-  }
+  // for(int i = 0;i<points.size();i++) {
+  //   std::cout<<"Points = "<<points[i]<<"\n";
+  // }
 }
 
 int VTKReader::get_numpoints() {
@@ -43,19 +50,23 @@ int VTKReader::get_numpoints() {
 
 void VTKReader::read_connectivity() {
 
-  // vtkCellArray* cells = grid->GetCells();
-  // connectivity.clear();
+  vtkIdType numCells = grid->GetNumberOfCells();
+  std::cout<<"numcells = "<<numCells<<"\n";
+  for (vtkIdType i = 0; i < numCells; ++i) {
+    vtkCell* cell = grid->GetCell(i);
+    vtkIdList* pointIds = cell->GetPointIds();    
 
-  // vtkIdType npts;
-  // const vtkIdType* pts;
-
-  // cells->InitTraversal();
-  // while (cells->GetNextCell(npts, pts)) {
-  //   for (vtkIdType i = 0; i < npts; ++i) {
-  //     connectivity.push_back(static_cast<double>(pts[i]));
-  //     std::cout<<"Connectivity = "<<connectivity[i]<<"\n";
-  //   }
-  // }
+    // Store connectivity
+    for (vtkIdType j = 0; j < pointIds->GetNumberOfIds(); ++j) {
+        connectivity.push_back(static_cast<double>(pointIds->GetId(j)));
+        
+    }
+  
+    std::cout<<"**************************\n";
+    // Store cell type
+    cellType.push_back(static_cast<double>(grid->GetCellType(i)));
+    // std::cout<<"cellType = "<<cellType[i]<<"\n";
+  }
 }
 
 void VTKReader::calc_normal() {
