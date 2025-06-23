@@ -23,8 +23,9 @@ class VTKReader {
   void read_points();
   void read_connectivity();
   void calc_normal();
-  void read_scalar(std::vector<double>&);
-  void read_vector(std::vector<std::vector<double>>&);
+  std::vector<double> read_scalar(const std::string& name);
+  std::vector<std::vector<double>> read_vector(const std::string& name, bool fromCellData=true);
+  std::vector<std::string> get_scalar_names(bool fromCellData = true);
   int get_numpoints();
   
   private:

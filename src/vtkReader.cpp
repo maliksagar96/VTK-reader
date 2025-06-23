@@ -7,6 +7,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
+#include <vtkPointData.h>
+
 
 void VTKReader::init(std::string filename) {
   this->filename = filename;  
@@ -69,35 +71,57 @@ void VTKReader::calc_normal() {
   
 }
 
-void VTKReader::read_scalar(std::vector<double>& scalar) {
-  vtkDataArray* scalarArray = grid->GetCellData()->GetScalars();
+std::vector<double> VTKReader::read_scalar(const std::string& name) {
+  vtkDataArray* scalar_array = grid->GetCellData()->GetScalars(name.c_str());
+  std::vector<double> result;
 
-  scalar.clear();
-  if (!scalarArray) {
-    std::cerr << "Error: No scalar data found in CELL_DATA.\n";
-    return;
+  if (scalar_array) {
+    for (vtkIdType i = 0; i < scalar_array->GetNumberOfTuples(); ++i) {
+      result.push_back(scalar_array->GetComponent(i, 0));
+    }
+  } else {
+    std::cerr << "Error: " << name << " not found in CELL_DATA.\n";
   }
 
-  vtkIdType numTuples = scalarArray->GetNumberOfTuples();
-  for (vtkIdType i = 0; i < numTuples; ++i) {
-    scalar.push_back(scalarArray->GetComponent(i, 0));
-  }
+  return result;
 }
 
 
-void VTKReader::read_vector(std::vector<std::vector<double>>& vect) {
-  vtkDataArray* vectorArray = grid->GetCellData()->GetVectors();
+std::vector<std::vector<double>> VTKReader::read_vector(const std::string& name, bool fromCellData) {
+  vtkDataArray* vectorArray = nullptr;
 
-  vect.clear();
-  if (!vectorArray) {
-    std::cerr << "Error: No vector data found in CELL_DATA.\n";
-    return;
+  if (fromCellData) {
+    vectorArray = grid->GetCellData()->GetVectors(name.c_str());
+  } else {
+    vectorArray = grid->GetPointData()->GetVectors(name.c_str());
   }
 
-  vtkIdType numTuples = vectorArray->GetNumberOfTuples();
-  for (vtkIdType i = 0; i < numTuples; ++i) {
-    double vec[3];
-    vectorArray->GetTuple(i, vec);
-    vect.push_back({vec[0], vec[1], vec[2]});
+  std::vector<std::vector<double>> result;
+
+  if (vectorArray) {
+    for (vtkIdType i = 0; i < vectorArray->GetNumberOfTuples(); ++i) {
+      double vec[3];
+      vectorArray->GetTuple(i, vec);
+      result.push_back({vec[0], vec[1], vec[2]});      
+    }
+  } else {
+    std::cerr << "Error: Vector " << name << " not found in "
+              << (fromCellData ? "CELL_DATA.\n" : "POINT_DATA.\n");
   }
+
+  return result;
+}
+
+std::vector<std::string> VTKReader::get_scalar_names(bool fromCellData) {
+  vtkDataSetAttributes* dataAttrs =fromCellData
+  ? static_cast<vtkDataSetAttributes*>(grid->GetCellData())
+  : static_cast<vtkDataSetAttributes*>(grid->GetPointData());
+
+  std::vector<std::string> names;
+  int numArrays = dataAttrs->GetNumberOfArrays();
+  for (int i = 0; i < numArrays; ++i) {
+    const char* name = dataAttrs->GetArrayName(i);
+    if (name) names.push_back(std::string(name));
+  }
+  return names;
 }

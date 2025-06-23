@@ -1,57 +1,51 @@
-
 #include "polyData.h"
-#include <iostream>
-#include <vector>
-#include <vtkSmartPointer.h>
-#include <vtkPolyDataReader.h>
-#include <vtkPolyData.h>
-#include <vtkPoints.h>
-#include <vtkCellArray.h>
-#include <vtkIdList.h>
-#include <vtkCellData.h>
-#include <vtkFieldData.h>
-#include <string>
 
+void polyReader::init(const std::string& filename) {
+  this->filename = filename;
+  std::cout << "Filename read.\n";
 
-void polyReader::init(std::string filename) {
-  this->filename = filename;  
-  std::cout<<"Filename read.\n";
   reader = vtkSmartPointer<vtkPolyDataReader>::New();
-  reader->SetFileName(filename.c_str());  
-  std::cout<<"Filename set.\n";
+  reader->SetFileName(filename.c_str());
+  std::cout << "Filename set.\n";
+
   reader->Update();
   polyData = reader->GetOutput();
 }
 
-void polyReader::read_points(){
-  std::cout<<"reading points.\n";
-  vtkPoints* points = polyData->GetPoints();
-  std::vector<double> pointCoords; // x0, y0, z0, x1, y1, z1, ...
+void polyReader::read_points() {
+  std::cout << "Reading points.\n";
+  vtkPoints* vtk_pts = polyData->GetPoints();
+  if (!vtk_pts) return;
 
-  for (vtkIdType i = 0; i < points->GetNumberOfPoints(); ++i) {
+  points.clear();
+  points.reserve(3 * vtk_pts->GetNumberOfPoints());
+
+  for (vtkIdType i = 0; i < vtk_pts->GetNumberOfPoints(); ++i) {
     double p[3];
-    points->GetPoint(i, p);
-    pointCoords.push_back(p[0]);
-    pointCoords.push_back(p[1]);
-    pointCoords.push_back(p[2]);
+    vtk_pts->GetPoint(i, p);
+    points.push_back(p[0]);
+    points.push_back(p[1]);
+    points.push_back(p[2]);
   }
 }
 
 void polyReader::read_connectivity() {
-  vtkCellArray* cells = polyData->GetPolys(); // or GetLines(), GetVerts(), etc.
-vtkIdType npts;
-vtkIdType* ptIds;
+  vtkCellArray* cells = polyData->GetPolys(); // Can also use GetLines/GetVerts if needed
+  vtkIdType npts;
+  vtkIdType* ptIds;
 
-cells->InitTraversal();
-while (cells->GetNextCell(npts, ptIds)) {
-  for (vtkIdType j = 0; j < npts; ++j) {
-    connectivity.push_back(static_cast<double>(ptIds[j]));
-  }
+  connectivity.clear();
+
+  cells->InitTraversal();
+  while (cells->GetNextCell(npts, ptIds)) {
+    for (vtkIdType j = 0; j < npts; ++j) {
+      connectivity.push_back(static_cast<double>(ptIds[j]));
+    }
   }
 }
 
-std::vector<double> polyReader::read_scalar(std::string scalar) {
-  vtkDataArray* scalar_array = polyData->GetCellData()->GetScalars(scalar.c_str());
+std::vector<double> polyReader::read_scalar(const std::string& name) {
+  vtkDataArray* scalar_array = polyData->GetCellData()->GetScalars(name.c_str());
   std::vector<double> result;
 
   if (scalar_array) {
@@ -59,13 +53,13 @@ std::vector<double> polyReader::read_scalar(std::string scalar) {
       result.push_back(scalar_array->GetComponent(i, 0));
     }
   } else {
-    std::cerr << "Error: " << scalar << " not found in CELL_DATA.\n";
+    std::cerr << "Error: " << name << " not found in CELL_DATA.\n";
   }
 
   return result;
 }
 
-std::vector<double> polyReader::read_vector(const std::string& name, bool fromCellData) {
+std::vector<std::vector<double>> polyReader::read_vector(const std::string& name, bool fromCellData) {
   vtkDataArray* vectorArray = nullptr;
 
   if (fromCellData) {
@@ -74,21 +68,38 @@ std::vector<double> polyReader::read_vector(const std::string& name, bool fromCe
     vectorArray = polyData->GetPointData()->GetVectors(name.c_str());
   }
 
-  std::vector<double> result;
+  std::vector<std::vector<double>> result;
 
   if (vectorArray) {
     for (vtkIdType i = 0; i < vectorArray->GetNumberOfTuples(); ++i) {
       double vec[3];
       vectorArray->GetTuple(i, vec);
-      result.push_back(vec[0]);
-      result.push_back(vec[1]);
-      result.push_back(vec[2]);
+      result.push_back({vec[0], vec[1], vec[2]});
     }
   } else {
-    std::cerr << "Error: Vector " << name << " not found in " 
+    std::cerr << "Error: Vector " << name << " not found in "
               << (fromCellData ? "CELL_DATA.\n" : "POINT_DATA.\n");
   }
 
   return result;
 }
 
+int polyReader::get_numpoints() const {
+  return points.size() / 3;
+}
+
+
+std::vector<std::string> polyReader::get_scalar_names(bool fromCellData) {
+vtkDataSetAttributes* dataAttrs = fromCellData
+                                   ? static_cast<vtkDataSetAttributes*>(polyData->GetCellData())
+                                   : static_cast<vtkDataSetAttributes*>(polyData->GetPointData());
+
+
+  std::vector<std::string> names;
+  int numArrays = dataAttrs->GetNumberOfArrays();
+  for (int i = 0; i < numArrays; ++i) {
+    const char* name = dataAttrs->GetArrayName(i);
+    if (name) names.push_back(std::string(name));
+  }
+  return names;
+}

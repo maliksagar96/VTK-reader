@@ -16,10 +16,11 @@ int main() {
   sampleFile->read_points();
   sampleFile->read_connectivity();
   vector<double> ex_imag = sampleFile->read_scalar("ElectricFieldXImag");
+  vector<string> scalar_names = sampleFile->get_scalar_names();
 
-  cout<<ex_imag[0]<<endl;
-  cout<<ex_imag[1]<<endl;
-  cout<<ex_imag[2]<<endl;
+  for(auto scalar:scalar_names) {
+    cout<<scalar<<endl;
+  }
   
   return 0;
 }
