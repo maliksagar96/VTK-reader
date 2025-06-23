@@ -1,12 +1,12 @@
 #include "vtkReader.h"
-#include <vector>
 #include <iostream>
+#include <vector>
 #include <vtkUnstructuredGridReader.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkPoints.h>
 #include <vtkSmartPointer.h>
 #include <vtkCellArray.h>
-#include <iostream>
+#include <vtkCellData.h>
 
 void VTKReader::init(std::string filename) {
   this->filename = filename;  
@@ -51,7 +51,6 @@ int VTKReader::get_numpoints() {
 void VTKReader::read_connectivity() {
 
   vtkIdType numCells = grid->GetNumberOfCells();
-  std::cout<<"numcells = "<<numCells<<"\n";
   for (vtkIdType i = 0; i < numCells; ++i) {
     vtkCell* cell = grid->GetCell(i);
     vtkIdList* pointIds = cell->GetPointIds();    
@@ -59,13 +58,10 @@ void VTKReader::read_connectivity() {
     // Store connectivity
     for (vtkIdType j = 0; j < pointIds->GetNumberOfIds(); ++j) {
         connectivity.push_back(static_cast<double>(pointIds->GetId(j)));
-        
     }
-  
-    std::cout<<"**************************\n";
     // Store cell type
     cellType.push_back(static_cast<double>(grid->GetCellType(i)));
-    // std::cout<<"cellType = "<<cellType[i]<<"\n";
+    
   }
 }
 
@@ -74,10 +70,34 @@ void VTKReader::calc_normal() {
 }
 
 void VTKReader::read_scalar(std::vector<double>& scalar) {
+  vtkDataArray* scalarArray = grid->GetCellData()->GetScalars();
 
+  scalar.clear();
+  if (!scalarArray) {
+    std::cerr << "Error: No scalar data found in CELL_DATA.\n";
+    return;
+  }
+
+  vtkIdType numTuples = scalarArray->GetNumberOfTuples();
+  for (vtkIdType i = 0; i < numTuples; ++i) {
+    scalar.push_back(scalarArray->GetComponent(i, 0));
+  }
 }
+
 
 void VTKReader::read_vector(std::vector<std::vector<double>>& vect) {
+  vtkDataArray* vectorArray = grid->GetCellData()->GetVectors();
 
+  vect.clear();
+  if (!vectorArray) {
+    std::cerr << "Error: No vector data found in CELL_DATA.\n";
+    return;
+  }
+
+  vtkIdType numTuples = vectorArray->GetNumberOfTuples();
+  for (vtkIdType i = 0; i < numTuples; ++i) {
+    double vec[3];
+    vectorArray->GetTuple(i, vec);
+    vect.push_back({vec[0], vec[1], vec[2]});
+  }
 }
-

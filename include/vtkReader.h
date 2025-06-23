@@ -8,7 +8,7 @@
 #include <vtkPoints.h>
 #include <vtkSmartPointer.h>
 #include <vtkCellArray.h>
-
+#include <string>
 
 class VTKReader {
   public:
@@ -26,9 +26,7 @@ class VTKReader {
   void read_scalar(std::vector<double>&);
   void read_vector(std::vector<std::vector<double>>&);
   int get_numpoints();
-
   
-
   private:
   std::string filename;
   vtkSmartPointer<vtkUnstructuredGridReader> reader;
@@ -36,10 +34,7 @@ class VTKReader {
 
   std::vector<double> points, connectivity, normal, area, cellType; 
   vtkUnstructuredGrid* grid;
-
-
-
-
+  
 };
 
 #endif

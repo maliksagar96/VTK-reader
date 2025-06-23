@@ -13,6 +13,7 @@ include_directories(include)
 set(Sources 
   src/main.cpp
   src/vtkReader.cpp
+  src/polyData.cpp
 )
 
 add_executable(${target_name} ${Sources})
