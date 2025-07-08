@@ -1,5 +1,9 @@
 #include "polyData.h"
 
+polyReader::polyReader(const std::string& filename) {
+  init(filename);
+}
+
 void polyReader::init(const std::string& filename) {
   this->filename = filename;
   std::cout << "Filename read.\n";
@@ -88,6 +92,11 @@ int polyReader::get_numpoints() const {
   return points.size() / 3;
 }
 
+int polyReader::get_numcells() const {
+  return get_numpoints()/3;
+}
+
+
 
 std::vector<std::string> polyReader::get_scalar_names(bool fromCellData) {
 vtkDataSetAttributes* dataAttrs = fromCellData
@@ -103,3 +112,22 @@ vtkDataSetAttributes* dataAttrs = fromCellData
   }
   return names;
 }
+
+std::vector<std::string> polyReader::get_vector_names(bool fromCellData) {
+  vtkDataSetAttributes* dataAttrs = fromCellData
+                                       ? static_cast<vtkDataSetAttributes*>(polyData->GetCellData())
+                                       : static_cast<vtkDataSetAttributes*>(polyData->GetPointData());
+
+  std::vector<std::string> vectorNames;
+  int numArrays = dataAttrs->GetNumberOfArrays();
+  for (int i = 0; i < numArrays; ++i) {
+    vtkDataArray* arr = dataAttrs->GetArray(i);
+    if (arr && arr->GetNumberOfComponents() == 3) {
+      const char* name = arr->GetName();
+      if (name) vectorNames.push_back(std::string(name));
+    }
+  }
+  return vectorNames;
+}
+
+

@@ -46,8 +46,12 @@ void VTKReader::read_points() {
   // }
 }
 
-int VTKReader::get_numpoints() {
+int VTKReader::get_numpoints() const {
   return num_points;
+}
+
+int VTKReader::get_numcells() const {
+  return num_points/3;
 }
 
 void VTKReader::read_connectivity() {
@@ -125,3 +129,21 @@ std::vector<std::string> VTKReader::get_scalar_names(bool fromCellData) {
   }
   return names;
 }
+
+std::vector<std::string> VTKReader::get_vector_names(bool fromCellData) {
+  vtkDataSetAttributes* dataAttrs = fromCellData
+    ? static_cast<vtkDataSetAttributes*>(grid->GetCellData())
+    : static_cast<vtkDataSetAttributes*>(grid->GetPointData());
+
+  std::vector<std::string> vectorNames;
+  int numArrays = dataAttrs->GetNumberOfArrays();
+  for (int i = 0; i < numArrays; ++i) {
+    vtkDataArray* arr = dataAttrs->GetArray(i);
+    if (arr && arr->GetNumberOfComponents() == 3) {
+      const char* name = arr->GetName();
+      if (name) vectorNames.push_back(std::string(name));
+    }
+  }
+  return vectorNames;
+}
+
