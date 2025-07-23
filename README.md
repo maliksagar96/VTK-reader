@@ -94,7 +94,7 @@ Here’s a sample program to demonstrate reading a .vtk PolyData file:
 using namespace std;
 
 int main() {
-  unique_ptr<polyReader> sampleFile = make_unique<polyReader>("../src/00719freq_ref_post_ref_sruface.stl.vtk");
+  unique_ptr<polyReader> sampleFile = make_unique<polyReader>("../src/ref_surface.vtk");
 
   sampleFile->read_points();
   sampleFile->read_connectivity();
@@ -109,19 +109,3 @@ int main() {
   return 0;
 }
 ```
-
-# Generate a default config file (if not already present)
-
-doxygen -g
-
-# Edit the Doxyfile:
-
-# - Set `INPUT = src include`
-
-# - Set `RECURSIVE = YES`
-
-# - Set `OUTPUT_DIRECTORY = docs`
-
-# Run doxygen
-
-doxygen Doxyfile
