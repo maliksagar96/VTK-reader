@@ -61,6 +61,9 @@ public:
    */
   void read_connectivity();
 
+
+  void read_offset();
+
   /**
    * @brief Calculates normal vectors for surface cells.
    */
@@ -101,6 +104,10 @@ public:
    */
   int get_numpoints() const;
 
+  const std::vector<double>& getPoints() const { return points; }
+  const std::vector<int>& getConnectivity() const { return connectivity; }
+  const std::vector<int>& getOffsets() const { return offsets; }
+
   /**
    * @brief Returns the number of cells in the mesh.
    * @return Number of cells.
@@ -114,7 +121,8 @@ private:
   int num_points; ///< Number of mesh points.
 
   std::vector<double> points; ///< Flattened vector of point coordinates.
-  std::vector<double> connectivity; ///< Flattened vector of cell connectivity.
+  std::vector<int> connectivity; ///< Flattened vector of cell connectivity.
+  std::vector<int> offsets;
   std::vector<double> normal; ///< Surface normals (optional).
   std::vector<double> area; ///< Area per cell (if computed).
   std::vector<double> cellType; ///< VTK cell type codes (if needed).

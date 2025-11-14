@@ -8,7 +8,11 @@
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 #include <vtkPointData.h>
+#include <vtkNew.h>    
 
+VTKReader::VTKReader(std::string filename) {
+    init(filename);
+}
 
 void VTKReader::init(std::string filename) {
   this->filename = filename;  
@@ -63,16 +67,142 @@ void VTKReader::read_connectivity() {
 
     // Store connectivity
     for (vtkIdType j = 0; j < pointIds->GetNumberOfIds(); ++j) {
-        connectivity.push_back(static_cast<double>(pointIds->GetId(j)));
+        connectivity.push_back(static_cast<int>(pointIds->GetId(j)));
     }
     // Store cell type
-    cellType.push_back(static_cast<double>(grid->GetCellType(i)));
+    cellType.push_back(static_cast<int>(grid->GetCellType(i)));
     
   }
 }
 
+void VTKReader::read_offset() {
+    std::cout << "Reading offsets.\n";
+
+    vtkCellArray* cells = grid->GetCells();
+    if (!cells) {
+        std::cerr << "Error: No cell connectivity found.\n";
+        return;
+    }
+
+#if VTK_MAJOR_VERSION >= 9
+    vtkNew<vtkIdTypeArray> legacy;
+    cells->ExportLegacyFormat(legacy);
+
+    offsets.clear();
+    connectivity.clear();
+
+    vtkIdType nTuples = legacy->GetNumberOfTuples();
+    vtkIdType i = 0;
+    vtkIdType offset = 0;
+
+    while (i < nTuples) {
+        vtkIdType npts = legacy->GetValue(i++);
+        offsets.push_back(offset);
+        for (vtkIdType j = 0; j < npts; ++j)
+            connectivity.push_back(static_cast<int>(legacy->GetValue(i++)));
+        offset = connectivity.size();
+    }
+
+#else
+    vtkIdTypeArray* offsetsArray = vtkIdTypeArray::SafeDownCast(cells->GetOffsetsArray());
+    if (!offsetsArray) {
+        std::cerr << "Error: No offsets array found or invalid type.\n";
+        return;
+    }
+
+    vtkIdType numOffsets = offsetsArray->GetNumberOfTuples();
+    offsets.clear();
+    offsets.reserve(numOffsets);
+
+    for (vtkIdType i = 0; i < numOffsets; ++i)
+        offsets.push_back(static_cast<int>(offsetsArray->GetValue(i)));
+#endif
+
+    std::cout << "Offsets read: " << offsets.size() << " entries.\n";
+}
+
+void VTKReader::calc_centeroids() {
+  centroids.clear();
+  std::vector<int> new_conn;
+  std::vector<int> new_off;
+
+  int conn_index = 0;
+  for (size_t i = 1; i < offsets.size(); ++i) {
+    int cell_size = offsets[i] - offsets[i - 1];
+
+    if (cell_size == 3) { // only triangles
+      int id1 = connectivity[conn_index];
+      int id2 = connectivity[conn_index + 1];
+      int id3 = connectivity[conn_index + 2];
+
+      // store new connectivity
+      new_conn.insert(new_conn.end(), {id1, id2, id3});
+      new_off.push_back(static_cast<int>(new_conn.size()));
+
+      // compute centroid
+      double cx = (points[id1*3] + points[id2*3] + points[id3*3]) / 3.0;
+      double cy = (points[id1*3 + 1] + points[id2*3 + 1] + points[id3*3 + 1]) / 3.0;
+      double cz = (points[id1*3 + 2] + points[id2*3 + 2] + points[id3*3 + 2]) / 3.0;
+
+      centroids.push_back(cx);
+      centroids.push_back(cy);
+      centroids.push_back(cz);
+    }  
+      conn_index += cell_size;
+    }
+
+    // replace connectivity and offsets with triangles only
+    connectivity.swap(new_conn);
+    offsets.swap(new_off);
+
+    std::cout << "Triangle centroids calculated: " << centroids.size()/3 << " cells.\n";
+}
+
 void VTKReader::calc_normal() {
-  
+  if (connectivity.empty() || points.empty()) {
+    std::cerr << "Error: Connectivity or points are empty. Cannot compute normals.\n";
+    return;
+  }
+
+  normals.clear();
+  normals.reserve(connectivity.size()); // each triangle → 3 entries (x,y,z)
+
+  for (size_t i = 0; i < connectivity.size(); i += 3) {
+    int id1 = connectivity[i];
+    int id2 = connectivity[i + 1];
+    int id3 = connectivity[i + 2];
+
+    // Triangle vertices
+    double x1 = points[id1*3], y1 = points[id1*3 + 1], z1 = points[id1*3 + 2];
+    double x2 = points[id2*3], y2 = points[id2*3 + 1], z2 = points[id2*3 + 2];
+    double x3 = points[id3*3], y3 = points[id3*3 + 1], z3 = points[id3*3 + 2];
+
+    // Edge vectors
+    double ux = x2 - x1, uy = y2 - y1, uz = z2 - z1;
+    double vx = x3 - x1, vy = y3 - y1, vz = z3 - z1;
+
+    // Cross product u × v
+    double nx = uy * vz - uz * vy;
+    double ny = uz * vx - ux * vz;
+    double nz = ux * vy - uy * vx;
+
+    double area = 0.5 * std::sqrt(nx * nx + ny * ny + nz * nz);
+    areas.push_back(area);
+
+    // Normalize
+    double len = std::sqrt(nx * nx + ny * ny + nz * nz);
+    if (len > 1e-12) {
+      nx /= len;
+      ny /= len;
+      nz /= len;
+    }
+
+    normals.push_back(nx);
+    normals.push_back(ny);
+    normals.push_back(nz);
+  }
+
+  std::cout << "Normals calculated for " << normals.size() / 3 << " triangles.\n";
 }
 
 std::vector<double> VTKReader::read_scalar(const std::string& name) {
@@ -89,7 +219,6 @@ std::vector<double> VTKReader::read_scalar(const std::string& name) {
 
   return result;
 }
-
 
 std::vector<std::vector<double>> VTKReader::read_vector(const std::string& name, bool fromCellData) {
   vtkDataArray* vectorArray = nullptr;
