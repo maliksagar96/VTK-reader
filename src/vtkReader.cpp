@@ -1,3 +1,26 @@
+/*
+
+cout << "Reading Fourier Monitor\n";
+  string Fourier_monitor = "FFT_7980.vtk";
+	unique_ptr<VTKReader> fft_monitor = make_unique<VTKReader>(Fourier_monitor);
+  
+	fft_monitor->read_points();
+	fft_monitor->read_connectivity();
+	fft_monitor->read_offset();
+	fft_monitor->calc_centeroids();
+	fft_monitor->calc_normal();
+
+	// store copies in member variables
+	vector<double> monitor_points = fft_monitor->getPoints();
+	vector<int> fft_monitor_connectivity = fft_monitor->getConnectivity();
+	vector<int> fft_offsets = fft_monitor->getOffsets();
+	vector<double> centers = fft_monitor->getCentroids();	
+	vector<double> norms = fft_monitor->getNormals();
+	vector<double> fft_monitor_areas = fft_monitor->getAreas();
+
+*/
+
+
 #include "vtkReader.h"
 #include <iostream>
 #include <vector>

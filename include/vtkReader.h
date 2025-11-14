@@ -64,6 +64,8 @@ public:
 
   void read_offset();
 
+  void calc_centeroids();
+
   /**
    * @brief Calculates normal vectors for surface cells.
    */
@@ -107,6 +109,9 @@ public:
   const std::vector<double>& getPoints() const { return points; }
   const std::vector<int>& getConnectivity() const { return connectivity; }
   const std::vector<int>& getOffsets() const { return offsets; }
+  const std::vector<double>& getCentroids() const { return centroids; }
+  const std::vector<double>& getNormals() const { return normals; }
+  const std::vector<double>& getAreas() const { return areas; }
 
   /**
    * @brief Returns the number of cells in the mesh.
@@ -123,8 +128,9 @@ private:
   std::vector<double> points; ///< Flattened vector of point coordinates.
   std::vector<int> connectivity; ///< Flattened vector of cell connectivity.
   std::vector<int> offsets;
-  std::vector<double> normal; ///< Surface normals (optional).
-  std::vector<double> area; ///< Area per cell (if computed).
+  std::vector<double> centroids;
+  std::vector<double> normals; ///< Surface normals (optional).
+  std::vector<double> areas; ///< Area per cell (if computed).
   std::vector<double> cellType; ///< VTK cell type codes (if needed).
 };
 
