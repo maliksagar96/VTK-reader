@@ -66,6 +66,12 @@ public:
    */
   void read_connectivity();
 
+  void read_offset();
+
+  void calc_centroids();   
+
+  void calc_normal();
+
   /**
    * @brief Reads scalar field values by name.
    * @param name Name of the scalar field.
@@ -107,13 +113,44 @@ public:
    */
   int get_numcells() const;
 
+  std::vector<double> getPoints() {
+    return points;
+  }
+
+  std::vector<int> getConnectivity() {
+    return connectivity;
+  }
+
+  const std::vector<int>& getOffsets() const {
+    return offsets;
+  }
+
+  const std::vector<double>& getCentroids() const {
+    return centroids;
+
+  }
+const std::vector<double>& getNormals() const {
+  return normals;
+}
+const std::vector<double>& getAreas() const{
+  return areas;
+}
+
+
+
 private:
   std::string filename; ///< Path to the input VTK file.
   vtkSmartPointer<vtkPolyDataReader> reader; ///< VTK reader object.
   vtkPolyData* polyData = nullptr; ///< Raw polydata pointer.
 
   std::vector<double> points; ///< Flattened vector of point coordinates.
-  std::vector<double> connectivity; ///< Flattened vector of cell connectivity.
+  std::vector<int> connectivity; ///< Flattened vector of cell connectivity.
+  std::vector<int> offsets;
+
+  std::vector<double> centroids;
+std::vector<double> normals;
+std::vector<double> areas;  
+
 };
 
 #endif
