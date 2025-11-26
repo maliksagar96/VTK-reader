@@ -1,7 +1,7 @@
 #include <iostream> 
 #include <memory>
-#include "vtkReader.h"
-#include "polyData.h"
+#include <VTKReader.h>
+#include <polyData.h>
 #include <vtkDataSetReader.h>
 
 using namespace std;

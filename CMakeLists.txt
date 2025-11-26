@@ -12,7 +12,7 @@ include_directories(include)
 
 set(Sources 
   src/main.cpp
-  src/vtkReader.cpp
+  src/VTKReader.cpp
   src/polyData.cpp
 )
 
